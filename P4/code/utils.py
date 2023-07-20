@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset, DataLoader
+import torch
 import numpy as np
 import pandas as pd
 import os
@@ -31,9 +32,10 @@ class ImageEncodingDataset(Dataset):
         return self.x.shape[0]
 
     def __getitem__(self, idx):
-        SVIID = int(self.x[i, 0])
-        x = self.x[i, 1:]
-        y = self.y[i, :]
+        SVIID = str(int(self.x[idx, 0]))
+        x = torch.tensor(self.x[idx, 1:])
+        y = torch.tensor(self.y[idx, :])
+
         svi1 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_0.jpg'))
         svi2 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_90.jpg'))
         svi3 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_180.jpg'))
@@ -41,4 +43,4 @@ class ImageEncodingDataset(Dataset):
 
         rm = cv2.imread(os.path.join(self.rm_folder, SVIID + '.png'))
 
-        return [svi1, svi2, svi3, svi4, x, y]
+        return [svi1, svi2, svi3, svi4, rm, x, y]
