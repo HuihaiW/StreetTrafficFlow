@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
 import torch
 import numpy as np
 import pandas as pd
@@ -27,6 +28,9 @@ class ImageEncodingDataset(Dataset):
                           '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
         self.x = self.data[self.x_columns].values
         self.y = self.data[self.y_columns].values
+        self.transform = transforms.Compose([transforms.ToTensor(),
+                                             transforms.Resize((1024, 1024)),
+                                             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     def __len__(self):
         return self.x.shape[0]
@@ -41,6 +45,18 @@ class ImageEncodingDataset(Dataset):
         svi3 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_180.jpg'))
         svi4 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_270.jpg'))
 
+        svi1 = self.transform(cv2.cvtColor(svi1, cv2.COLOR_BGR2RGB))
+        svi2 = self.transform(cv2.cvtColor(svi2, cv2.COLOR_BGR2RGB))
+        svi3 = self.transform(cv2.cvtColor(svi3, cv2.COLOR_BGR2RGB))
+        svi4 = self.transform(cv2.cvtColor(svi4, cv2.COLOR_BGR2RGB))
+
+        svi1 = svi1[None, :]
+        svi2 = svi2[None, :]
+        svi3 = svi3[None, :]
+        svi4 = svi4[None, :]
+
         rm = cv2.imread(os.path.join(self.rm_folder, SVIID + '.png'))
+        rm = self.transform(cv2.cvtColor(rm, cv2.COLOR_BGR2RGB))
+        rm = rm[None, :]
 
         return [svi1, svi2, svi3, svi4, rm, x, y]
