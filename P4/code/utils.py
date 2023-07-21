@@ -40,23 +40,29 @@ class ImageEncodingDataset(Dataset):
         x = torch.tensor(self.x[idx, 1:])
         y = torch.tensor(self.y[idx, :])
 
-        svi1 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_0.jpg'))
-        svi2 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_90.jpg'))
-        svi3 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_180.jpg'))
-        svi4 = cv2.imread(os.path.join(self.svi_folder, SVIID + '_270.jpg'))
+        try:
+            svi1 = np.load(os.path.join(self.svi_folder, SVIID + '_0.npy'))
+        except:
+            svi1 = np.zeros((1, 256, 64, 64))
+        try:
+            svi2 = np.load(os.path.join(self.svi_folder, SVIID + '_90.npy'))
+        except:
+            svi2 = np.zeros((1, 256, 64, 64))
+        try:
+            svi3 = np.load(os.path.join(self.svi_folder, SVIID + '_180.npy'))
+        except:
+            svi3 = np.zeros((1, 256, 64, 64))
+        try:
+            svi4 = np.load(os.path.join(self.svi_folder, SVIID + '_270.npy'))
+        except:
+            svi4 = np.zeros((1, 256, 64, 64))
 
-        svi1 = self.transform(cv2.cvtColor(svi1, cv2.COLOR_BGR2RGB))
-        svi2 = self.transform(cv2.cvtColor(svi2, cv2.COLOR_BGR2RGB))
-        svi3 = self.transform(cv2.cvtColor(svi3, cv2.COLOR_BGR2RGB))
-        svi4 = self.transform(cv2.cvtColor(svi4, cv2.COLOR_BGR2RGB))
+        svi1 = torch.from_numpy(svi1)
+        svi2 = torch.from_numpy(svi2)
+        svi3 = torch.from_numpy(svi3)
+        svi4 = torch.from_numpy(svi4)
 
-        svi1 = svi1[None, :]
-        svi2 = svi2[None, :]
-        svi3 = svi3[None, :]
-        svi4 = svi4[None, :]
-
-        rm = cv2.imread(os.path.join(self.rm_folder, SVIID + '.png'))
-        rm = self.transform(cv2.cvtColor(rm, cv2.COLOR_BGR2RGB))
-        rm = rm[None, :]
+        rm = np.load(os.path.join(self.rm_folder, SVIID + '.npy'))
+        rm = torch.from_numpy(rm)
 
         return [svi1, svi2, svi3, svi4, rm, x, y]
