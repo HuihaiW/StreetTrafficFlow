@@ -4,6 +4,12 @@ import torch
 import numpy as np
 import os
 
+def train(dataloader):
+    for data in dataloader:
+        continue
+        
+
+
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 data = ImageEncodingDataset(r'Data/Encoding/train.csv', r'../Data_full/Images/embedding')
