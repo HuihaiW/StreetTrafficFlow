@@ -61,6 +61,7 @@ class Encoder(torch.nn.Module):
 
     def forward(self, data):
         x1 = self.model1(data[0])
+        
         x2 = self.model1(data[1])
         x3 = self.model1(data[2])
         x4 = self.model1(data[3])
@@ -73,53 +74,6 @@ class Encoder(torch.nn.Module):
         x6 = self.relu(x6)
         x6 = self.fc_x3(x6)
         x6 = self.relu(x6)
-        
-        # # x1 = self.model2(x1)
-        # # x2 = self.model2(x2)
-        # # x3 = self.model2(x3)
-        # # x4 = self.model2(x4)
-        # # x5 = self.model2(x5)
-
-        # # x = (x1 + x2 + x3 + x4 + x5) / 5
-        # x1 = self.conv1(x1)
-        # # x1 = self.bn1(x1)
-        # x1 = self.relu(x1)
-        # # x1 = self.conv2(x1)
-        # # x1 = self.bn2(x1)
-        # x1 = self.avgpool(x1)
-
-        # x2 = self.conv1(x2)
-        # # x2 = self.bn1(x2)
-        # x2 = self.relu(x2)
-        # # x2 = self.conv2(x2)
-        # # x2 = self.bn2(x2)
-        # x2 = self.avgpool(x2)
-
-        # x3 = self.conv1(x3)
-        # # x3 = self.bn1(x3)
-        # x3 = self.relu(x3)
-        # # x3 = self.conv2(x3)
-        # # x3 = self.bn2(x3)
-        # x3 = self.avgpool(x3)
-
-        # x4 = self.conv1(x4)
-        # # x4 = self.bn1(x4)
-        # x4 = self.relu(x4)
-        # # x4 = self.conv2(x4)
-        # # x4 = self.bn2(x4)
-        # x4 = self.avgpool(x4)
-
-        # x5 = self.conv1_2(x5)
-        # x5 = self.bn1_2(x5)
-        # x5 = self.relu_2(x5)
-        # # x5 = self.conv2_2(x5)
-        # # x5 = self.bn2_2(x5)
-        # x5 = self.avgpool_2(x5)
-        
-        # x1 = torch.flatten(x1)
-        # x2 = torch.flatten(x2)
-        # x3 = torch.flatten(x3)
-        # x4 = torch.flatten(x4)
 
         x1 = self.fc1(x1)
         x1 = self.relu(x1)
@@ -146,17 +100,9 @@ class Encoder(torch.nn.Module):
         x5 = self.fc2_r(x5)
         x5 = self.relu(x5)
 
-        x1 = torch.flatten(x1)
-        x2 = torch.flatten(x2)
-        x3 = torch.flatten(x3)
-        x4 = torch.flatten(x4)
-        x5 = torch.flatten(x5)
-        x6 = torch.flatten(x6)
-
         x_svi = (x1 + x2 + x3 + x4)/4
-        # print(x5.shape)
 
-        x = torch.cat([x_svi, x5, x6])
+        x = torch.cat([x_svi, x5, x6], 1)
 
         x = self.fc3(x)
         x = self.relu(x)

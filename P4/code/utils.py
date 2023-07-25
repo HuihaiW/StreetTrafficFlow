@@ -42,20 +42,24 @@ class ImageEncodingDataset(Dataset):
 
         try:
             svi1 = np.load(os.path.join(self.svi_folder, SVIID + '_0.npy'))
+            svi1 = np.squeeze(svi1)
         except:
-            svi1 = np.zeros((1, 256, 64, 64))
+            svi1 = np.zeros((256, 64, 64))
         try:
             svi2 = np.load(os.path.join(self.svi_folder, SVIID + '_90.npy'))
+            svi2 = np.squeeze(svi2)
         except:
-            svi2 = np.zeros((1, 256, 64, 64))
+            svi2 = np.zeros((256, 64, 64))
         try:
             svi3 = np.load(os.path.join(self.svi_folder, SVIID + '_180.npy'))
+            svi3 = np.squeeze(svi3)
         except:
-            svi3 = np.zeros((1, 256, 64, 64))
+            svi3 = np.zeros((256, 64, 64))
         try:
             svi4 = np.load(os.path.join(self.svi_folder, SVIID + '_270.npy'))
+            svi4 = np.squeeze(svi4)
         except:
-            svi4 = np.zeros((1, 256, 64, 64))
+            svi4 = np.zeros((256, 64, 64))
 
         svi1 = torch.from_numpy(svi1)
         svi2 = torch.from_numpy(svi2)
@@ -63,6 +67,7 @@ class ImageEncodingDataset(Dataset):
         svi4 = torch.from_numpy(svi4)
 
         rm = np.load(os.path.join(self.rm_folder, SVIID + '.npy'))
+        rm = np.squeeze(rm)
         rm = torch.from_numpy(rm)
 
         return [svi1, svi2, svi3, svi4, rm, x, y]
