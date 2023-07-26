@@ -41,7 +41,7 @@ class ImageEncodingDataset(Dataset):
     def __getitem__(self, idx):
         SVIID = str(int(self.x[idx, 0]))
         x = torch.tensor(self.x[idx, 1:])
-        y = torch.tensor(self.y[idx, :] - )
+        y = torch.tensor((self.y[idx, :] - 498)/543.4)
 
         try:
             svi1 = np.load(os.path.join(self.svi_folder, SVIID + '_0.npy'))
@@ -125,8 +125,8 @@ class GraphDataset():
 
 
 def MAPE(pred, real):
-    pred = pred * 150 + 139
-    real = real * 150 + 139
+    pred = pred * 543.4 + 498
+    real = real * 543.4 + 498
     mask_2 = (real!= 0)
     real = real[mask_2]
     pred = pred[mask_2]
