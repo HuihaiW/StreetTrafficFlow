@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch
 import numpy as np
@@ -29,9 +30,9 @@ class ImageEncodingDataset(Dataset):
                           '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
         self.x = self.data[self.x_columns].values
         self.y = self.data[self.y_columns].values
-        self.transform = transforms.Compose([transforms.ToTensor(),
-                                             transforms.Resize((1024, 1024)),
-                                             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        # self.transform = transforms.Compose([transforms.ToTensor(),
+        #                                      transforms.Resize((1024, 1024)),
+        #                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     def __len__(self):
         return self.x.shape[0]
@@ -139,4 +140,28 @@ def train(trainloader, valloader, model, epoch, optimizer, loss_function,
         if i%50 == 0:
             epoch_path = os.path.join(weights_path, 'Epoch/' + str(i) + '_2.pt')
             torch.save(model.state_dict(), epoch_path)
-            
+
+def getEmbedding(DataPth, rootFld, model, device):
+    result = []
+    dataset = ImageEncodingDataset(DataPth, rootFld)
+    dataLoader = DataLoader(dataset,
+                            batch_size=20,
+                            shuffle=False,
+                            num_workers=10)
+    model = model.eval()
+    for data in dataLoader:
+        with torch.no_grad():
+            x1 = data[0].to(device).float()
+            x2 = data[1].to(device).float()
+            x3 = data[2].to(device).float()
+            x4 = data[3].to(device).float()
+            x5 = data[4].to(device).float()
+            x6 = data[5].to(device).float()
+            input = [x1, x2, x3, x4, x5, x6]
+            embedding = model(input)
+            result.append(embedding.detach().cpu().tolist())
+            return result
+
+
+
+
