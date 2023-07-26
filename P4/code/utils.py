@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torch.utils.data import DataLoader
+from torch_geometric.data import Data
 from tqdm import tqdm
 import torch
 import numpy as np
@@ -40,7 +41,7 @@ class ImageEncodingDataset(Dataset):
     def __getitem__(self, idx):
         SVIID = str(int(self.x[idx, 0]))
         x = torch.tensor(self.x[idx, 1:])
-        y = torch.tensor(self.y[idx, :])
+        y = torch.tensor(self.y[idx, :] - )
 
         try:
             svi1 = np.load(os.path.join(self.svi_folder, SVIID + '_0.npy'))
@@ -74,12 +75,58 @@ class ImageEncodingDataset(Dataset):
 
         return [svi1, svi2, svi3, svi4, rm, x, y]
 
-class GraphDataset(Dataset):
+class GraphDataset():
     
+    def __init__(self, data_path_se, data_path_image, data_path_y, adjacentMtxPath):
+
+        self.adjacent_matrix = pd.read_csv(r'Data/adjacentMatrix.csv')
+        self.From= self.adjacent_matrix['From'].values
+        self.To = self.adjacent_matrix['To'].values
+        self.edge = torch.tensor([self.From, self.To], dtype=torch.long)
+
+        self.data_se = pd.read_csv(data_path_se)
+        self.x_columns = ['StreetWidt', 'Length', 'Commercial', 'CulturalFa', 'EducationF',
+                           'Government', 'HealthServ', 'Miscellane', 'PublicSafe', 'Recreation',
+                           'ReligiousI', 'Residentia', 'SocialServ', 'Transporta', 'Water',
+                           'Avg_B01001', 'Avg_B010_1', 'Avg_B010_2', 'Avg_B010_3', 'Avg_B02001',
+                           'Avg_B020_1', 'Avg_B020_2', 'Avg_B08006', 'Avg_B080_1', 'Avg_B080_2',
+                           'Avg_B08013', 'Avg_B08124', 'Avg_B15003', 'Avg_B19001', 'Avg_B19013',
+                           'Avg_B23013', 'Avg_B24011', 'Avg_B240_1', 'Avg_B240_2', 'Avg_B240_3',
+                           'Avg_B240_4', 'Avg_B240_5', 'Avg_B240_6', 'Avg_B240_7', 'Avg_B240_8',
+                           'Avg_B240_9', 'Avg_B24_10', 'Avg_B24_11', 'Avg_B24_12', 'Avg_B24_13',
+                           'Avg_B24_14', 'Avg_B24_15', 'Avg_B24_16', 'Avg_B24_17', 'Avg_B24_18',
+                           'Avg_B24_20', 'Avg_B24_21', 'Avg_B24_22', 'Avg_B24_23', 'Avg_B24_24']
+
+        self.x_se = self.data_se[self.x_columns].values
+        self.x_se = torch.tensor(self.x_se, dtype=torch.float)
+
+        self.x_image = pd.read_csv(data_path_image).drop(columns=['Unnamed: 0']).values
+        self.x_image = torch.tensor(self.x_image, dtype=torch.float)
+
+        self.x = torch.concat([self.x_se, self.x_image], 1)
+
+        self.y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+                          '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
+        self.y_df = pd.read_csv(data_path_y) 
+        self.y = torch.tensor(self.y_df[self.y_columns].values, dtype=torch.float)
+
+        self.train_mask = self.y_df['Train_mask'].values
+        self.val_mask = self.y_df['Val_mask'].values
+        self.test_mask = self.y_df['Test_mask'].values
+
+    # def __len__(self):
+    #     return self.x.shape[0]
+
+    def get_data(self):
+        graph = Data(x=self.x, edge_index=self.edge, y=self.y)
+        return (graph, self.train_mask, self.val_mask, self.test_mask)
+
+
+
 
 def MAPE(pred, real):
-    # pred = pred * 150 + 139
-    # real = real * 150 + 139
+    pred = pred * 150 + 139
+    real = real * 150 + 139
     mask_2 = (real!= 0)
     real = real[mask_2]
     pred = pred[mask_2]
