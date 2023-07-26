@@ -76,8 +76,8 @@ class ImageEncodingDataset(Dataset):
 
 
 def MAPE(pred, real):
-    pred = pred * 150 + 139
-    real = real * 150 + 139
+    # pred = pred * 150 + 139
+    # real = real * 150 + 139
     mask_2 = (real!= 0)
     real = real[mask_2]
     pred = pred[mask_2]
@@ -135,10 +135,10 @@ def train(trainloader, valloader, model, epoch, optimizer, loss_function,
 
         if aveVLoss < best:
             best = aveVLoss
-            best_path = os.path.join(weights_path, 'best_2.pt')
+            best_path = os.path.join(weights_path, 'best_3.pt')
             torch.save(model.state_dict(), best_path)
         if i%50 == 0:
-            epoch_path = os.path.join(weights_path, 'Epoch/' + str(i) + '_2.pt')
+            epoch_path = os.path.join(weights_path, 'Epoch/' + str(i) + '_3.pt')
             torch.save(model.state_dict(), epoch_path)
 
 def getEmbedding(DataPth, rootFld, model, device):
@@ -159,7 +159,7 @@ def getEmbedding(DataPth, rootFld, model, device):
             x6 = data[5].to(device).float()
             input = [x1, x2, x3, x4, x5, x6]
             embedding = model(input)
-            result.append(embedding.detach().cpu().tolist())
+            result = result + embedding.detach().cpu().tolist()
             return result
 
 

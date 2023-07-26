@@ -22,7 +22,9 @@ class Encoder(torch.nn.Module):
         self.model2 = resnet50(pretrained=False)
         self.model2.conv1 = nn.Conv2d(256, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 
-        self.relu = nn.ReLU(inplace=True)
+        # self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.Tanh()
+        self.sigmoid = nn.Sigmoid()
 
         self.fc_x1 = nn.Linear(in_features=55, out_features=32, bias=True)
         self.fc_x2 = nn.Linear(in_features=32, out_features=16, bias=True)
@@ -47,7 +49,7 @@ class Encoder(torch.nn.Module):
 
         x6 = data[5]
         x6 = self.fc_x1(x6)
-        x6 = self.relu(x6)
+        x6 = self.sigmoid(x6)
         x6 = self.fc_x2(x6)
         x6 = self.relu(x6)
         x6 = self.fc_x3(x6)
