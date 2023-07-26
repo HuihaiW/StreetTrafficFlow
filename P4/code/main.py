@@ -62,36 +62,37 @@ def train(trainloader, valloader, model, epoch, optimizer, loss_function,
         aveVLoss = sum(epoch_loss)/len(epoch_loss)
         val_loss.append(aveVLoss)
 
-        print('Training loss is: ' + str(aveTLoss) + ',  validation loss is: ' + str(aveVLoss))
+        print('Epoch: ' + str(i) + ',    Training loss is: ' + str(aveTLoss) + ',  validation loss is: ' + str(aveVLoss))
 
         if aveVLoss < best:
             best = aveVLoss
-            best_path = os.path.join(weights_path, 'best.pt')
+            best_path = os.path.join(weights_path, 'best_2.pt')
             torch.save(model.state_dict(), best_path)
-        if i%5 == 0:
-            epoch_path = os.path.join(weights_path, 'Epoch/' + str(i) + '.pt')
+        if i%50 == 0:
+            epoch_path = os.path.join(weights_path, 'Epoch/' + str(i) + '_2.pt')
             torch.save(model.state_dict(), epoch_path)
             
 
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 model = Encoder().to(device)
-learning_rate = 0.001
+# model.load_state_dict(torch.load(r'Weights/Epoch/295.pt'))
+learning_rate = 0.0001
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 trainData = ImageEncodingDataset(r'Data/Encoding/train.csv', r'../Data_full/Images/embedding')
 valData = ImageEncodingDataset(r'Data/Encoding/val.csv', r'../Data_full/Images/embedding')
 
 training_dataloader = DataLoader(trainData, 
-                                 batch_size=10, 
+                                 batch_size=20, 
                                  shuffle=False, 
                                  num_workers=10)
 validation_dataloader = DataLoader(valData, 
-                                 batch_size=10, 
+                                 batch_size=20, 
                                  shuffle=False, 
-                                 num_workers=5)
-epoch = 300
+                                 num_workers=10)
+epoch = 3000
 weight_path = r'Weights'
-best = 1000000
+best = 100
 train(training_dataloader, validation_dataloader, model, epoch, optimizer, MAPE, device, weight_path, best)
 
