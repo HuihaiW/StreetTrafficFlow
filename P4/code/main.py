@@ -11,26 +11,26 @@ import numpy as np
 import os
 
 # Train embedding model
-# device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-# model = Encoder().to(device)
-# # model.load_state_dict(torch.load(r'Weights/Epoch/295.pt'))
-# learning_rate = 0.01
-# optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-# trainData = ImageEncodingDataset(r'Data/Encoding/train.csv', r'../Data_full/Images/embedding')
-# valData = ImageEncodingDataset(r'Data/Encoding/val.csv', r'../Data_full/Images/embedding')
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+model = Encoder().to(device)
+# model.load_state_dict(torch.load(r'Weights/Epoch/295.pt'))
+learning_rate = 0.001
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+trainData = ImageEncodingDataset(r'Data/Encoding/train.csv', r'../Data_full/Images/embedding')
+valData = ImageEncodingDataset(r'Data/Encoding/val.csv', r'../Data_full/Images/embedding')
 
-# training_dataloader = DataLoader(trainData, 
-#                                  batch_size=20, 
-#                                  shuffle=False, 
-#                                  num_workers=10)
-# validation_dataloader = DataLoader(valData, 
-#                                  batch_size=20, 
-#                                  shuffle=False, 
-#                                  num_workers=10)
-# epoch = 3000
-# weight_path = r'Weights'
-# best = 100
-# train(training_dataloader, validation_dataloader, model, epoch, optimizer, MAPE, device, weight_path, best)
+training_dataloader = DataLoader(trainData, 
+                                 batch_size=1, 
+                                 shuffle=False, 
+                                 num_workers=10)
+validation_dataloader = DataLoader(valData, 
+                                 batch_size=1, 
+                                 shuffle=False, 
+                                 num_workers=10)
+epoch = 3000
+weight_path = r'Weights'
+best = 100
+train(training_dataloader, validation_dataloader, model, epoch, optimizer, MAPE, device, weight_path, best)
 
 # Creating new embeddings
 

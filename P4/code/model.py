@@ -23,8 +23,9 @@ class Encoder(torch.nn.Module):
         self.model2.conv1 = nn.Conv2d(256, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 
         # self.relu = nn.ReLU(inplace=True)
-        self.relu = nn.Tanh()
-        self.sigmoid = nn.Sigmoid()
+        # self.act = nn.Tanh()
+        self.act = nn.ReLU(inplace=True)
+        self.act1 = nn.Sigmoid()
 
         self.fc_x1 = nn.Linear(in_features=55, out_features=32, bias=True)
         self.fc_x2 = nn.Linear(in_features=32, out_features=16, bias=True)
@@ -49,43 +50,43 @@ class Encoder(torch.nn.Module):
 
         x6 = data[5]
         x6 = self.fc_x1(x6)
-        x6 = self.sigmoid(x6)
+        x6 = self.act1(x6)
         x6 = self.fc_x2(x6)
-        x6 = self.relu(x6)
+        x6 = self.act1(x6)
         x6 = self.fc_x3(x6)
-        x6 = self.relu(x6)
+        x6 = self.act1(x6)
 
         x1 = self.fc1(x1)
-        x1 = self.relu(x1)
+        x1 = self.act(x1)
         x1 = self.fc2(x1)
-        x1 = self.relu(x1)
+        x1 = self.act(x1)
 
         x2 = self.fc1(x2)
-        x2 = self.relu(x2)
+        x2 = self.act(x2)
         x2 = self.fc2(x2)
-        x2 = self.relu(x2)
+        x2 = self.act(x2)
 
         x3 = self.fc1(x3)
-        x3 = self.relu(x3)
+        x3 = self.act(x3)
         x3 = self.fc2(x3)
-        x3 = self.relu(x3)
+        x3 = self.act(x3)
 
         x4 = self.fc1(x4)
-        x4 = self.relu(x4)
+        x4 = self.act(x4)
         x4 = self.fc2(x4)
-        x4 = self.relu(x4)
+        x4 = self.act(x4)
 
         x5 = self.fc1_r(x5)
-        x5 = self.relu(x5)
+        x5 = self.act(x5)
         x5 = self.fc2_r(x5)
-        x5 = self.relu(x5)
+        x5 = self.act(x5)
 
         x_svi = (x1 + x2 + x3 + x4)/4
 
         x = torch.cat([x_svi, x5, x6], 1)
 
         x = self.fc3(x)
-        x = self.relu(x)
+        x = self.act(x)
         x = self.fc4(x)
 
         return x
@@ -103,43 +104,43 @@ class Embedding(Encoder):
 
         x6 = data[5]
         x6 = self.fc_x1(x6)
-        x6 = self.relu(x6)
+        x6 = self.act(x6)
         x6 = self.fc_x2(x6)
-        x6 = self.relu(x6)
+        x6 = self.act(x6)
         x6 = self.fc_x3(x6)
-        x6 = self.relu(x6)
+        x6 = self.act(x6)
 
         x1 = self.fc1(x1)
-        x1 = self.relu(x1)
+        x1 = self.act(x1)
         x1 = self.fc2(x1)
-        x1 = self.relu(x1)
+        x1 = self.act(x1)
 
         x2 = self.fc1(x2)
-        x2 = self.relu(x2)
+        x2 = self.act(x2)
         x2 = self.fc2(x2)
-        x2 = self.relu(x2)
+        x2 = self.act(x2)
 
         x3 = self.fc1(x3)
-        x3 = self.relu(x3)
+        x3 = self.act(x3)
         x3 = self.fc2(x3)
-        x3 = self.relu(x3)
+        x3 = self.act(x3)
 
         x4 = self.fc1(x4)
-        x4 = self.relu(x4)
+        x4 = self.act(x4)
         x4 = self.fc2(x4)
-        x4 = self.relu(x4)
+        x4 = self.act(x4)
 
         x5 = self.fc1_r(x5)
-        x5 = self.relu(x5)
+        x5 = self.act(x5)
         x5 = self.fc2_r(x5)
-        x5 = self.relu(x5)
+        x5 = self.act(x5)
 
         x_svi = (x1 + x2 + x3 + x4)/4
 
         x = torch.cat([x_svi, x5, x6], 1)
 
         x = self.fc3(x)
-        x = self.relu(x)
+        x = self.act(x)
 
         return x
 

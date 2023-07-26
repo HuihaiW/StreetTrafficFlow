@@ -73,7 +73,9 @@ class ImageEncodingDataset(Dataset):
         rm = np.squeeze(rm)
         rm = torch.from_numpy(rm)
 
-        return [svi1, svi2, svi3, svi4, rm, x, y]
+        mark = SVIID
+
+        return [svi1, svi2, svi3, svi4, rm, x, y, mark]
 
 class GraphDataset():
     
@@ -125,12 +127,16 @@ class GraphDataset():
 
 
 def MAPE(pred, real):
-    pred = pred * 543.4 + 498
-    real = real * 543.4 + 498
+
+    pred = pred * 543.4 + 498.0
+    real = real * 543.4 + 498.0
     mask_2 = (real!= 0)
+
     real = real[mask_2]
     pred = pred[mask_2]
-    return torch.mean(torch.abs((pred - real)/(real)))
+    error = torch.mean(torch.abs((pred - real)/(real)))
+    # print(error)
+    return error
 
 def train(trainloader, valloader, model, epoch, optimizer, loss_function,
           device, weights_path, best):
@@ -138,8 +144,10 @@ def train(trainloader, valloader, model, epoch, optimizer, loss_function,
     val_loss = []
     for i in range(epoch):
         epoch_loss = []
+        idx = 0
         # Do training
         for data in tqdm(trainloader):
+            idx += 1
             optimizer.zero_grad()
             x1 = data[0].to(device).float()
             x2 = data[1].to(device).float()
@@ -148,6 +156,7 @@ def train(trainloader, valloader, model, epoch, optimizer, loss_function,
             x5 = data[4].to(device).float()
             x6 = data[5].to(device).float()
             y = data[6].to(device).float()
+            mark = data[7]
             input = [x1, x2, x3, x4, x5, x6]
             
             output = model(input)
@@ -156,6 +165,9 @@ def train(trainloader, valloader, model, epoch, optimizer, loss_function,
 
             l.backward()
             optimizer.step()
+            # if l > 50:
+            #     print('a')
+            #     print(idx, mark)
 
             epoch_loss.append(l.tolist())
         aveTLoss = sum(epoch_loss)/len(epoch_loss)
