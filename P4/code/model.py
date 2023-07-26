@@ -1,5 +1,5 @@
 from torch import flatten
-
+from torch_geometric.nn import GATConv
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
@@ -143,6 +143,83 @@ class Embedding(Encoder):
         x = self.act(x)
 
         return x
+
+class GraphNet(torch.nn.Module):
+    def __init__(self):
+        super(GraphNet, self).__init__()
+        
+        self.phy1 = nn.Linear(2, 32)
+        self.phy2 = nn.Linear(32, 64)
+
+        self.poi1 = nn.Linear(13, 64)
+        self.poi2 = nn.Linear(64, 64)
+        
+        self.se1 = nn.Linear(40, 128)
+        self.se2 = nn.Linear(128, 128)
+
+        self.scene1 = nn.Linear(1280, 64)
+        self.scene2 = nn.Linear(64, 64)
+
+        self.conv1 = GATConv(128 + 64 + 64 + 64, 128)
+        self.conv2 = GATConv(128, 128)
+        self.conv3 = GATConv(128, 64)
+
+        self.fc1 = nn.Linear(64, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, 24)
+
+        self.act1 = F.sigmoid()
+        self.act2 = F.relu()
+
+    def forward(self, graph):
+        x_all, edge_index = graph.x, graph.edge_index
+
+        x_phy = x_all[:, 0:2]
+        x_poi = x_all[:, 2:15]
+        x_se = x_all[:, 15:55]
+        x_scene = x_all[:, 55:]
+
+        x_phy = self.phy1(x_phy)
+        x_phy = self.act1(x_phy)
+        x_phy = self.phy2(x_phy)
+        x_phy = self.act2(x_phy)
+
+        x_poi = self.poi1(x_poi)
+        x_poi = self.act1(x_poi)
+        x_poi = self.poi2(x_poi)
+        x_poi = self.act2(x_poi)
+
+        x_se = self.se1(x_se)
+        x_se = self.act1(x_se)
+        x_se = self.se2(x_se)
+        x_se = self.act2(x_se)
+
+        x_scene = self.scene1(x_scene)
+        x_scene = self.act1(x_scene)
+        x_scene = self.scene2(x_scene)
+        x_scene = self.act2(x_scene)
+
+        x = torch.cat((x_phy, x_poi, x_se, x_scene), 1)
+
+        x = self.conv1(x, edge_index)
+        x = self.act1(x)
+
+        x = self.conv2(x, edge_index)
+        x = self.act1(x)
+
+        x = self.conv3(x, edge_index)
+        x = self.act1(x)
+
+        x = self.fc1(x)
+        x = self.act1(x)
+        x = self.fc2(x)
+        x = self.act1(x)
+        x = self.fc3(x)
+        
+        return x
+
+
+        
 
 # model = Embedding()
 # print(model)
