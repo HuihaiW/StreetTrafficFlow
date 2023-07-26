@@ -74,6 +74,8 @@ class ImageEncodingDataset(Dataset):
 
         return [svi1, svi2, svi3, svi4, rm, x, y]
 
+class GraphDataset(Dataset):
+    
 
 def MAPE(pred, real):
     # pred = pred * 150 + 139
