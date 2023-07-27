@@ -227,42 +227,51 @@ def getEmbedding(DataPth, rootFld, model, device):
             result = result + embedding.detach().cpu().tolist()
             return result
         
-def train_graph(graph, graph_test, train_mask, val_mask,test_mask, model, optimizer, 
+def train_graph(graph, graph_test, k_fold, model, optimizer, 
                 device, weight_path, loss_function, best, epoch):
     train_loss = []
     val_loss = []
-    for i in range(epoch):
-        optimizer.zero_grad()
-        output = model(graph)
-        l = loss_function(output[train_mask], graph.y[train_mask])
+    for k in range(k_fold):
+
+        print('*******Training fold: ' + str(k) + '*******')
+        print('***********************************')
+        mask = graph.y[:, 0] != 0
+        indexes = mask.nonzero(as_tuple=True)[0]
         
-        lT = l.tolist()
-        train_loss.append(lT)
 
-        with torch.no_grad():
-            out = model(graph_test)
-            lV = loss_function(out[val_mask], graph_test.y[val_mask])
-            lV = lV.tolist()
-            val_loss.append(lV)
-        
-        # with torch.no_grad():
-        #     lT = loss_function(out[test_mask], graph.y[test_mask].cpu())
-        #     val_loss.append(lV)
-        # print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
-        #       ', Val error: ' + str(lV), ',    Test error: ' + str(lT))
+        for i in range(epoch):
+            optimizer.zero_grad()
+            output = model(graph)
+            l = loss_function(output[train_mask], graph.y[train_mask])
+            
+            lT = l.tolist()
+            train_loss.append(lT)
+            l.backward()
+            optimizer.step()
 
-        print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
-              ', Val error: ' + str(lV))
-        l.backward()
-        optimizer.step()
+            with torch.no_grad():
+                out = model(graph_test)
+                lV = loss_function(out[val_mask], graph_test.y[val_mask])
+                lV = lV.tolist()
+                val_loss.append(lV)
+            
+            # with torch.no_grad():
+            #     lT = loss_function(out[test_mask], graph.y[test_mask].cpu())
+            #     val_loss.append(lV)
+            # print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
+            #       ', Val error: ' + str(lV), ',    Test error: ' + str(lT))
 
-        if lV < best:
-            best = lV
-            best_path = os.path.join(weight_path, 'best.pt')
-            torch.save(model.state_dict(), best_path)
-        if i%1000 == 0:
-            epoch_path = os.path.join(weight_path, 'Epoch/' + str(i) + '.pt')
-            torch.save(model.state_dict(), epoch_path)
+            print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
+                ', Val error: ' + str(lV))
+
+
+            if lV < best:
+                best = lV
+                best_path = os.path.join(weight_path, 'best.pt')
+                torch.save(model.state_dict(), best_path)
+            if i%1000 == 0:
+                epoch_path = os.path.join(weight_path, 'Epoch/' + str(i) + '.pt')
+                torch.save(model.state_dict(), epoch_path)
 
 
 
