@@ -231,13 +231,33 @@ def train_graph(graph, graph_test, k_fold, model, optimizer,
                 device, weight_path, loss_function, best, epoch):
     train_loss = []
     val_loss = []
+
+    mask = graph.y[:, 0] != -1 
+    indexes = mask.nonzero(as_tuple=True)[0]
+    indexes = indexes.cpu().numpy()
+    np.random.shuffle(indexes)
+    train_mask_index = indexes[0: 1240]
+    test_mask_index = indexes[1240 :]
+
+    train_mask = [False] * graph.y.shape[0]
+    val_mask = [False] * graph.y.shape[0]
+    test_mask = [False] * graph.y.shape[0]
+
+    for idx in test_mask_index:
+        test_mask[idx] = True
+
     for k in range(k_fold):
 
         print('*******Training fold: ' + str(k) + '*******')
         print('***********************************')
-        mask = graph.y[:, 0] != 0
-        indexes = mask.nonzero(as_tuple=True)[0]
-        
+
+        length = int(train_mask_index.shape[0] / k_fold)
+        val_index = train_mask_index[k*length:(k+1)*length]
+        train_index = np.concatenate([train_mask_index[0:k*length], train_mask_index[(k+1)*length:]])
+        for v in val_index:
+            val_mask[v] = True
+        for t in train_index:
+            train_mask[t] = True
 
         for i in range(epoch):
             optimizer.zero_grad()
@@ -254,12 +274,6 @@ def train_graph(graph, graph_test, k_fold, model, optimizer,
                 lV = loss_function(out[val_mask], graph_test.y[val_mask])
                 lV = lV.tolist()
                 val_loss.append(lV)
-            
-            # with torch.no_grad():
-            #     lT = loss_function(out[test_mask], graph.y[test_mask].cpu())
-            #     val_loss.append(lV)
-            # print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
-            #       ', Val error: ' + str(lV), ',    Test error: ' + str(lT))
 
             print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
                 ', Val error: ' + str(lV))
@@ -269,9 +283,11 @@ def train_graph(graph, graph_test, k_fold, model, optimizer,
                 best = lV
                 best_path = os.path.join(weight_path, 'best.pt')
                 torch.save(model.state_dict(), best_path)
-            if i%1000 == 0:
+            if i%100 == 0:
                 epoch_path = os.path.join(weight_path, 'Epoch/' + str(i) + '.pt')
                 torch.save(model.state_dict(), epoch_path)
+
+    return test_mask
 
 
 

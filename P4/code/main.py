@@ -78,9 +78,10 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 weight_path = r'Weights/Graph'
 best = 100000
-epoch = 3000
+epoch = 300
+k_fold = 10
 
-train_graph(graphtrain, graphtest, train, val,test, model, optimizer, device, weight_path, MAPE, best, epoch)
+train_graph(graphtrain, graphtest, k_fold, model, optimizer, device, weight_path, MAPE, best, epoch)
 
 
 
