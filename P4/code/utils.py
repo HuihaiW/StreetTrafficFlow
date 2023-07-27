@@ -109,10 +109,12 @@ class GraphDataset():
 
         self.x = torch.concat([self.x_se, self.x_image], 1)
 
+        # self.y_columns = ['7', '8', '9', '16', '17', '18', '19', '20']
         self.y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
                           '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
         self.y_df = pd.read_csv(data_path_y)
         self.y = torch.tensor(self.y_df[self.y_columns].values, dtype=torch.float)
+        # self.y = torch.sum(self.y, 1)
 
         self.train_mask = self.y_df['Train_mask'].values
         self.val_mask = self.y_df['Val_mask'].values
@@ -130,8 +132,8 @@ class GraphDataset():
 
 def MAPE(pred, real):
 
-    pred = pred * 543.4 + 498.0
-    real = real * 543.4 + 498.0
+    # pred = pred * 543.4 + 498.0
+    # real = real * 543.4 + 498.0
     mask_2 = (real!= 0)
 
     real = real[mask_2]
@@ -224,6 +226,45 @@ def getEmbedding(DataPth, rootFld, model, device):
             embedding = model(input)
             result = result + embedding.detach().cpu().tolist()
             return result
+        
+def train_graph(graph, graph_test, train_mask, val_mask,test_mask, model, optimizer, 
+                device, weight_path, loss_function, best, epoch):
+    train_loss = []
+    val_loss = []
+    for i in range(epoch):
+        optimizer.zero_grad()
+        output = model(graph)
+        l = loss_function(output[train_mask], graph.y[train_mask])
+        
+        lT = l.tolist()
+        train_loss.append(lT)
+
+        with torch.no_grad():
+            out = model(graph_test)
+            lV = loss_function(out[val_mask], graph_test.y[val_mask])
+            lV = lV.tolist()
+            val_loss.append(lV)
+        
+        # with torch.no_grad():
+        #     lT = loss_function(out[test_mask], graph.y[test_mask].cpu())
+        #     val_loss.append(lV)
+        # print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
+        #       ', Val error: ' + str(lV), ',    Test error: ' + str(lT))
+
+        print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
+              ', Val error: ' + str(lV))
+        l.backward()
+        optimizer.step()
+
+        if lV < best:
+            best = lV
+            best_path = os.path.join(weight_path, 'best.pt')
+            torch.save(model.state_dict(), best_path)
+        if i%1000 == 0:
+            epoch_path = os.path.join(weight_path, 'Epoch/' + str(i) + '.pt')
+            torch.save(model.state_dict(), epoch_path)
+
+
 
 
 

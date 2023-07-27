@@ -3,8 +3,10 @@ from utils import GraphDataset
 from utils import MAPE
 from utils import train
 from utils import getEmbedding
+from utils import train_graph
 from model import Encoder
 from model import Embedding
+from model import GraphNet
 from torch.utils.data import DataLoader
 import pandas as pd
 import torch
@@ -53,12 +55,33 @@ import os
 # print(df_values.std())
 # print(df_values.shape)
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 data_path_se = r'Data/X_ave.csv'
-data_path_image = r'Data/Encoding.csv'
+# data_path_image = r'Data/Encoding.csv'
+data_path_image = r'../Data_full/X/scene.csv'
 data_path_y = r'Data/Hour_Y_masked.csv'
 adjacentMtxPath = r'Data/adjacentMatrix.csv'
 
 data = GraphDataset(data_path_se, data_path_image, data_path_y, adjacentMtxPath)
-graph, train, val, test = data.get_data()
+graphtrain, train, val, test = data.get_data()
+graphtrain.to(device)
+
+graphtest, train, val, test = data.get_data()
+graphtest.to(device)
+
+model = GraphNet()
+model.to(device)
+
+learning_rate = 0.001
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+weight_path = r'Weights/Graph'
+best = 100000
+epoch = 3000
+
+train_graph(graphtrain, graphtest, train, val,test, model, optimizer, device, weight_path, MAPE, best, epoch)
+
+
 
 

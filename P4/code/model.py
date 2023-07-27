@@ -157,19 +157,21 @@ class GraphNet(torch.nn.Module):
         self.se1 = nn.Linear(40, 128)
         self.se2 = nn.Linear(128, 128)
 
-        self.scene1 = nn.Linear(1280, 64)
+        # self.scene1 = nn.Linear(1280, 64)
+        self.scene1 = nn.Linear(365, 64)
         self.scene2 = nn.Linear(64, 64)
 
         self.conv1 = GATConv(128 + 64 + 64 + 64, 128)
-        self.conv2 = GATConv(128, 128)
-        self.conv3 = GATConv(128, 64)
+        self.conv2 = GATConv(128, 64)
+        self.conv3 = GATConv(64, 64)
 
         self.fc1 = nn.Linear(64, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 24)
 
-        self.act1 = F.sigmoid()
-        self.act2 = F.relu()
+        self.act1 = nn.Sigmoid()
+        self.act2 = nn.ReLU()
+        self.act3 = nn.Tanh()
 
     def forward(self, graph):
         x_all, edge_index = graph.x, graph.edge_index
@@ -180,17 +182,17 @@ class GraphNet(torch.nn.Module):
         x_scene = x_all[:, 55:]
 
         x_phy = self.phy1(x_phy)
-        x_phy = self.act1(x_phy)
+        x_phy = self.act2(x_phy)
         x_phy = self.phy2(x_phy)
         x_phy = self.act2(x_phy)
 
         x_poi = self.poi1(x_poi)
-        x_poi = self.act1(x_poi)
+        x_poi = self.act2(x_poi)
         x_poi = self.poi2(x_poi)
         x_poi = self.act2(x_poi)
 
         x_se = self.se1(x_se)
-        x_se = self.act1(x_se)
+        x_se = self.act2(x_se)
         x_se = self.se2(x_se)
         x_se = self.act2(x_se)
 
@@ -201,19 +203,27 @@ class GraphNet(torch.nn.Module):
 
         x = torch.cat((x_phy, x_poi, x_se, x_scene), 1)
 
+
+        # x = torch.cat((x_phy, x_poi, x_se), 1)
+
         x = self.conv1(x, edge_index)
-        x = self.act1(x)
+        x = self.act2(x)
+        # x = F.dropout(x, p=0.5)
 
         x = self.conv2(x, edge_index)
-        x = self.act1(x)
+        x = self.act2(x)
+        # x = F.dropout(x, p=0.5)
 
-        x = self.conv3(x, edge_index)
-        x = self.act1(x)
+        # x = self.conv3(x, edge_index)
+        # x = self.act2(x)
+        # x = F.dropout(x, p=0.5)
 
         x = self.fc1(x)
-        x = self.act1(x)
+        x = self.act2(x)
+        # x = F.dropout(x, p=0.5)
         x = self.fc2(x)
-        x = self.act1(x)
+        x = self.act2(x)
+        # x = F.dropout(x, p=0.5)
         x = self.fc3(x)
         
         return x
