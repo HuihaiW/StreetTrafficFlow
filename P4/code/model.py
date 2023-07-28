@@ -211,11 +211,11 @@ class GraphNet(torch.nn.Module):
         # x = torch.cat((x_phy, x_poi, x_se), 1)
 
         x = self.conv1(x, edge_index)
-        x = self.act3(x)
+        x = self.act1(x)
         x = self.dropout(x)
 
         x = self.conv2(x, edge_index)
-        x = self.act2(x)
+        x = self.act1(x)
         x = self.dropout(x)
 
         x = self.conv3(x, edge_index)
@@ -223,13 +223,13 @@ class GraphNet(torch.nn.Module):
         x = self.dropout(x)
 
         x = self.fc1(x)
-        # x = self.act2(x)
+        x = self.act2(x)
         # x = self.dropout(x)
         x = self.fc2(x)
-        # x = self.act2(x)
+        x = self.act2(x)
         # x = self.dropout(x)
         x = self.fc3(x)
-        # x = self.act2(x)
+        x = self.act2(x)
         
         return x
 
