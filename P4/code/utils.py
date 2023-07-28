@@ -6,6 +6,7 @@ from tqdm import tqdm
 import torch
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import os
 import cv2
 
@@ -100,9 +101,21 @@ class GraphDataset():
                            'Avg_B24_20', 'Avg_B24_21', 'Avg_B24_22', 'Avg_B24_23', 'Avg_B24_24']
 
         self.x_se = self.data_se[self.x_columns]
-        self.x_se = (self.x_se - self.x_se.mean())/self.x_se.std()
+        # self.x_se = (self.x_se - self.x_se.mean())/self.x_se.std()
         self.x_se = self.x_se.values
-        self.x_se = torch.tensor(self.x_se, dtype=torch.float)
+
+        self.x_phy = self.x_se[:, 0:2]
+        self.x_poi = self.x_se[:, 2:15]
+        self.x_social = self.x_se[:, 15:]
+
+        self.x_phy = (self.x_phy - self.x_phy.mean())/self.x_phy.std()
+        self.x_poi = (self.x_poi - self.x_poi.mean())/self.x_poi.std()
+        self.x_social = (self.x_social - self.x_social.mean())/self.x_social.std()
+
+        self.x_se = np.concatenate([self.x_phy, self.x_poi, self.x_social], 1)
+        self.x_se =torch.tensor(self.x_se, dtype=torch.float)
+        # self.x_se = (self.x_se - self.x_se.mean())/self.x_se.std
+        # self.x_se = torch.tensor(self.x_se, dtype=torch.float)
 
         self.x_image = pd.read_csv(data_path_image).drop(columns=['Unnamed: 0']).values
         self.x_image = torch.tensor(self.x_image, dtype=torch.float)
@@ -113,7 +126,10 @@ class GraphDataset():
         self.y_columns = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
                           '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
         self.y_df = pd.read_csv(data_path_y)
-        self.y = torch.tensor(self.y_df[self.y_columns].values, dtype=torch.float)
+        self.y = self.y_df[self.y_columns].values
+        self.all_mask = self.y[:, 0] != -1
+        # self.y = (self.y - 497)/543.4
+        self.y = torch.tensor(self.y, dtype=torch.float)
         # self.y = torch.sum(self.y, 1)
 
         self.train_mask = self.y_df['Train_mask'].values
@@ -125,16 +141,16 @@ class GraphDataset():
 
     def get_data(self):
         graph = Data(x=self.x, edge_index=self.edge, y=self.y)
-        return (graph, self.train_mask, self.val_mask, self.test_mask)
+        return (graph, self.train_mask, self.val_mask, self.test_mask, self.all_mask)
 
 
 
 
 def MAPE(pred, real):
 
-    # pred = pred * 543.4 + 498.0
-    # real = real * 543.4 + 498.0
-    mask_2 = (real!= 0)
+    # pred = pred * 543.4 + 497.0
+    # real = real * 543.4 + 497.0
+    mask_2 = (real != 0)
 
     real = real[mask_2]
     pred = pred[mask_2]
@@ -206,6 +222,8 @@ def train(trainloader, valloader, model, epoch, optimizer, loss_function,
             epoch_path = os.path.join(weights_path, 'Epoch/' + str(i) + '_3.pt')
             torch.save(model.state_dict(), epoch_path)
 
+    
+
 def getEmbedding(DataPth, rootFld, model, device):
     result = []
     dataset = ImageEncodingDataset(DataPth, rootFld)
@@ -227,17 +245,17 @@ def getEmbedding(DataPth, rootFld, model, device):
             result = result + embedding.detach().cpu().tolist()
             return result
         
-def train_graph(graph, graph_test, k_fold, model, optimizer, 
+def train_graph(mask, graph, graph_test, k_fold, model, optimizer, 
                 device, weight_path, loss_function, best, epoch):
     train_loss = []
     val_loss = []
 
-    mask = graph.y[:, 0] != -1 
+    # mask = graph.y[:, 0] != (-1 - 497)/543.4
     indexes = mask.nonzero(as_tuple=True)[0]
     indexes = indexes.cpu().numpy()
     np.random.shuffle(indexes)
-    train_mask_index = indexes[0: 1240]
-    test_mask_index = indexes[1240 :]
+    train_mask_index = indexes[0:1400]
+    test_mask_index = indexes[1400:]
 
     train_mask = [False] * graph.y.shape[0]
     val_mask = [False] * graph.y.shape[0]
@@ -245,6 +263,7 @@ def train_graph(graph, graph_test, k_fold, model, optimizer,
 
     for idx in test_mask_index:
         test_mask[idx] = True
+    
 
     for k in range(k_fold):
 
@@ -262,21 +281,17 @@ def train_graph(graph, graph_test, k_fold, model, optimizer,
         for i in range(epoch):
             optimizer.zero_grad()
             output = model(graph)
+            # real_mask = graph.y[train_mask] > 0
             l = loss_function(output[train_mask], graph.y[train_mask])
-            
-            lT = l.tolist()
-            train_loss.append(lT)
             l.backward()
             optimizer.step()
 
             with torch.no_grad():
                 out = model(graph_test)
                 lV = loss_function(out[val_mask], graph_test.y[val_mask])
-                lV = lV.tolist()
-                val_loss.append(lV)
 
-            print('epoch: ' + str(i) + ',   Train error: ' + str(lT) + 
-                ', Val error: ' + str(lV))
+            print('Fold: ' + str(k) + ',    epoch: ' + str(i) + ',   Train error: ' + str(l.detach().cpu().tolist()) + 
+                ', Val error: ' + str(lV.detach().cpu().tolist()))
 
 
             if lV < best:
@@ -287,7 +302,27 @@ def train_graph(graph, graph_test, k_fold, model, optimizer,
                 epoch_path = os.path.join(weight_path, 'Epoch/' + str(i) + '.pt')
                 torch.save(model.state_dict(), epoch_path)
 
+        # model.load_state_dict(torch.load(best_path))
+
     return test_mask
+
+def draw_result(predict, real, i):
+    mask = real[:, 0] != -1
+
+    real = real[mask]
+    predict = predict[mask]
+
+    real_v = real[i, :]
+    pred_v = predict[i, :]
+
+    plt.plot(real_v, label='real')
+    plt.plot(pred_v, label='pred')
+    plt.legend()
+
+    plt.show()
+
+
+
 
 
 
