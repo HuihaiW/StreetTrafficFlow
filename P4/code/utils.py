@@ -143,16 +143,19 @@ class GraphDataset():
         m_2000 = max_tensor >= 2000
         idx_2000 = m_2000.nonzero(as_tuple=True)[0]
 
-        for i in idx_1000_2000:
-            self.repeat_list[i] = 4
-        for i in idx_2000:
-            self.repeat_list[i] = 20
+        # for i in idx_1000_2000:
+        #     self.repeat_list[i] = 4
+        # for i in idx_2000:
+        #     self.repeat_list[i] = 20
 
         self.repeat_list = torch.tensor(self.repeat_list)
         self.y = torch.tensor(self.y, dtype=torch.float)
-        self.y = torch.repeat_interleave(self.y, self.repeat_list, dim=0)
 
         self.all_mask = self.y[:, 0] != -1
+
+        # self.y = torch.repeat_interleave(self.y, self.repeat_list, dim=0)
+
+        
         # self.y = (self.y - 497)/543.4
         
         # self.y = torch.sum(self.y, 1)
@@ -175,10 +178,14 @@ def MAPE(pred, real):
 
     # pred = pred * 543.4 + 497.0
     # real = real * 543.4 + 497.0
-    mask_2 = (real != 0)
+    mask2 = (real > 60)
+    # mask3 = real < 4000
 
-    real = real[mask_2]
-    pred = pred[mask_2]
+    # mask = torch.logical_and(mask2, mask3)
+
+
+    real = real[mask2]
+    pred = pred[mask2]
     error = torch.mean(torch.abs((pred - real)/(real)))
     # print(error)
     return error
@@ -275,18 +282,18 @@ def train_graph(mask, graph, graph_test, k_fold, model, optimizer,
     train_loss = []
     val_loss = []
 
-    # mask = graph.y[:, 0] != (-1 - 497)/543.4
+    # mask = y_origin[:, 0] != -1
     indexes = mask.nonzero(as_tuple=True)[0]
     indexes = indexes.cpu().numpy()
     np.random.shuffle(indexes)
-    # train_mask_index = indexes[0:1400]
-    # test_mask_index = indexes[1400:]
-    train_mask_index = indexes[0:3400]
-    test_mask_index = indexes[3400:]
+    train_mask_index = indexes[0:1400]
+    test_mask_index = indexes[1400:]
+    # train_mask_index = indexes[0:3000]
+    # test_mask_index = indexes[3000:]
 
-    train_mask = [False] * graph.y.shape[0]
-    val_mask = [False] * graph.y.shape[0]
-    test_mask = [False] * graph.y.shape[0]
+    train_mask = [False] * mask.shape[0]
+    val_mask = [False] * mask.shape[0]
+    test_mask = [False] * mask.shape[0]
 
     for idx in test_mask_index:
         test_mask[idx] = True
@@ -304,23 +311,30 @@ def train_graph(mask, graph, graph_test, k_fold, model, optimizer,
             val_mask[v] = True
         for t in train_index:
             train_mask[t] = True
+        
+        train_mask1 = torch.tensor(train_mask)
+        # train_mask1 = torch.repeat_interleave(train_mask, repeat_list.cpu(), dim=0)
+
+        val_mask1 = torch.tensor(val_mask)
+        # val_mask1 = torch.repeat_interleave(val_mask, repeat_list.cpu(), dim=0)
 
         for i in range(epoch):
             optimizer.zero_grad()
             output = model(graph)
             # print(output.shape)
             # print(output)
-            print(repeat_list)
-            output = torch.repeat_interleave(output, repeat_list, dim=0)
+            # print(repeat_list)
+            # output = torch.repeat_interleave(output, repeat_list, dim=0)
             # real_mask = graph.y[train_mask] > 0
-            l = loss_function(output[train_mask], graph.y[train_mask])
+            # y = torch.repeat_interleave(graph.y, repeat_list, dim=0)
+            l = loss_function(output[train_mask1], graph.y[train_mask1])
             l.backward()
             optimizer.step()
 
             with torch.no_grad():
                 out = model(graph_test)
-                out = torch.repeat_interleave(out, repeat_list, dim=0)
-                lV = loss_function(out[val_mask], graph_test.y[val_mask])
+                # out = torch.repeat_interleave(out, repeat_list, dim=0)
+                lV = loss_function(out[val_mask1], graph.y[val_mask1])
 
             print('Fold: ' + str(k) + ',    epoch: ' + str(i) + ',   Train error: ' + str(l.detach().cpu().tolist()) + 
                 ', Val error: ' + str(lV.detach().cpu().tolist()))
@@ -335,10 +349,11 @@ def train_graph(mask, graph, graph_test, k_fold, model, optimizer,
                 torch.save(model.state_dict(), epoch_path)
 
         # model.load_state_dict(torch.load(best_path))
-
+    final_path = os.path.join(weight_path, 'Fianl.pt')    
+    torch.save(model.state_dict(), final_path)
     return test_mask
 
-def draw_result(predict, real, i):
+def draw_result(predict, real, i, path):
     mask = real[:, 0] != -1
 
     real = real[mask]
@@ -347,11 +362,14 @@ def draw_result(predict, real, i):
     real_v = real[i, :]
     pred_v = predict[i, :]
 
+    out_path = os.path.join(path, str(i) + '.jpg')
+
     plt.plot(real_v, label='real')
     plt.plot(pred_v, label='pred')
     plt.legend()
 
-    plt.show()
+    plt.savefig(out_path)
+    plt.clf()
 
 
 

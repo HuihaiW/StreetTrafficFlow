@@ -175,7 +175,7 @@ class GraphNet(torch.nn.Module):
         # self.act2 = nn.LeakyReLU(0.3)
         self.act3 = nn.Tanh()
 
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.3)
 
     def forward(self, graph):
         x_all, edge_index = graph.x, graph.edge_index
@@ -211,11 +211,11 @@ class GraphNet(torch.nn.Module):
         # x = torch.cat((x_phy, x_poi, x_se), 1)
 
         x = self.conv1(x, edge_index)
-        x = self.act1(x)
+        x = self.act2(x)
         x = self.dropout(x)
 
         x = self.conv2(x, edge_index)
-        x = self.act1(x)
+        x = self.act2(x)
         x = self.dropout(x)
 
         x = self.conv3(x, edge_index)
@@ -223,7 +223,7 @@ class GraphNet(torch.nn.Module):
         x = self.dropout(x)
 
         x = self.fc1(x)
-        x = self.act2(x)
+        x = self.act1(x)
         # x = self.dropout(x)
         x = self.fc2(x)
         x = self.act2(x)

@@ -66,7 +66,7 @@ data_path_y = r'Data/Hour_Y_masked.csv'
 adjacentMtxPath = r'Data/adjacentMatrix.csv'
 
 data = GraphDataset(data_path_se, data_path_image, data_path_y, adjacentMtxPath)
-graphtrain, all_mask, repeat_list1 = data.get_data()
+graphtrain, all_mask, repeat_list1= data.get_data()
 graphtrain.to(device)
 
 graphtest, all_mask, repeat_list= data.get_data()
@@ -100,14 +100,17 @@ test_mask = pd.read_csv(r'Data/testMask.csv')['Mask'].values
 model.load_state_dict(torch.load(r'Weights/Graph/best.pt'))
 model.eval()
 test_result = model(graphtrain)
+# test_result = torch.repeat_interleave(test_result, repeat_list, dim=0)
 test_result1 = test_result[test_mask]
 loss = MAPE(test_result1, graphtrain.y[test_mask])
 print("Final loss is: ", loss)
 
 # draw_result(test_result.detach().cpu().numpy(), graphtest.y.detach().cpu().numpy(), 500)
 
-draw_result(test_result.detach().cpu().numpy()[test_mask], 
-            graphtest.y.detach().cpu().numpy()[test_mask], 30)
+for i in range(test_mask.shape[0]):
+    path = r'Data/Result'
+    draw_result(test_result.detach().cpu().numpy()[test_mask], 
+            graphtest.y.detach().cpu().numpy()[test_mask], i, path)
 
 
 
