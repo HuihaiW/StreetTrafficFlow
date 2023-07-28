@@ -127,21 +127,46 @@ class GraphDataset():
                           '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
         self.y_df = pd.read_csv(data_path_y)
         self.y = self.y_df[self.y_columns].values
+
+
+        # repeat the dataset to make sure the distribution of the target is even
+        maxes = self.y.max(axis=1)
+
+        max_tensor = torch.tensor(maxes)
+        self.repeat_list = [1] * max_tensor.shape[0]
+
+        m_1000_2000_1 = max_tensor > 1000
+        m_1000_2000_2 = max_tensor < 2000
+        mask_1000_2000 = torch.logical_and(m_1000_2000_1, m_1000_2000_2)
+        idx_1000_2000 = mask_1000_2000.nonzero(as_tuple=True)[0]
+
+        m_2000 = max_tensor >= 2000
+        idx_2000 = m_2000.nonzero(as_tuple=True)[0]
+
+        for i in idx_1000_2000:
+            self.repeat_list[i] = 4
+        for i in idx_2000:
+            self.repeat_list[i] = 20
+
+        self.repeat_list = torch.tensor(self.repeat_list)
+        self.y = torch.tensor(self.y, dtype=torch.float)
+        self.y = torch.repeat_interleave(self.y, self.repeat_list, dim=0)
+
         self.all_mask = self.y[:, 0] != -1
         # self.y = (self.y - 497)/543.4
-        self.y = torch.tensor(self.y, dtype=torch.float)
+        
         # self.y = torch.sum(self.y, 1)
 
-        self.train_mask = self.y_df['Train_mask'].values
-        self.val_mask = self.y_df['Val_mask'].values
-        self.test_mask = self.y_df['Test_mask'].values
+        # self.train_mask = self.y_df['Train_mask'].values
+        # self.val_mask = self.y_df['Val_mask'].values
+        # self.test_mask = self.y_df['Test_mask'].values
 
     # def __len__(self):
     #     return self.x.shape[0]
 
     def get_data(self):
         graph = Data(x=self.x, edge_index=self.edge, y=self.y)
-        return (graph, self.train_mask, self.val_mask, self.test_mask, self.all_mask)
+        return (graph, self.all_mask, self.repeat_list)
 
 
 
@@ -246,7 +271,7 @@ def getEmbedding(DataPth, rootFld, model, device):
             return result
         
 def train_graph(mask, graph, graph_test, k_fold, model, optimizer, 
-                device, weight_path, loss_function, best, epoch):
+                repeat_list, weight_path, loss_function, best, epoch):
     train_loss = []
     val_loss = []
 
@@ -254,8 +279,10 @@ def train_graph(mask, graph, graph_test, k_fold, model, optimizer,
     indexes = mask.nonzero(as_tuple=True)[0]
     indexes = indexes.cpu().numpy()
     np.random.shuffle(indexes)
-    train_mask_index = indexes[0:1400]
-    test_mask_index = indexes[1400:]
+    # train_mask_index = indexes[0:1400]
+    # test_mask_index = indexes[1400:]
+    train_mask_index = indexes[0:3400]
+    test_mask_index = indexes[3400:]
 
     train_mask = [False] * graph.y.shape[0]
     val_mask = [False] * graph.y.shape[0]
@@ -281,6 +308,10 @@ def train_graph(mask, graph, graph_test, k_fold, model, optimizer,
         for i in range(epoch):
             optimizer.zero_grad()
             output = model(graph)
+            # print(output.shape)
+            # print(output)
+            print(repeat_list)
+            output = torch.repeat_interleave(output, repeat_list, dim=0)
             # real_mask = graph.y[train_mask] > 0
             l = loss_function(output[train_mask], graph.y[train_mask])
             l.backward()
@@ -288,6 +319,7 @@ def train_graph(mask, graph, graph_test, k_fold, model, optimizer,
 
             with torch.no_grad():
                 out = model(graph_test)
+                out = torch.repeat_interleave(out, repeat_list, dim=0)
                 lV = loss_function(out[val_mask], graph_test.y[val_mask])
 
             print('Fold: ' + str(k) + ',    epoch: ' + str(i) + ',   Train error: ' + str(l.detach().cpu().tolist()) + 

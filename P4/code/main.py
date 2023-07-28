@@ -66,13 +66,15 @@ data_path_y = r'Data/Hour_Y_masked.csv'
 adjacentMtxPath = r'Data/adjacentMatrix.csv'
 
 data = GraphDataset(data_path_se, data_path_image, data_path_y, adjacentMtxPath)
-graphtrain, train, val, test, all_mask = data.get_data()
+graphtrain, all_mask, repeat_list1 = data.get_data()
 graphtrain.to(device)
 
-graphtest, train, val, test, all_mask = data.get_data()
+graphtest, all_mask, repeat_list= data.get_data()
 print(graphtest.y[graphtest.y != -1].numpy().mean())
 print(graphtest.y[graphtest.y != -1].numpy().std())
 graphtest.to(device)
+
+repeat_list = repeat_list.to(device)
 
 
 model = GraphNet()
@@ -90,7 +92,7 @@ loss_function = MAPE
 # loss_function = nn.MSELoss()
 model.train()
 all_mask = torch.tensor(all_mask, dtype=bool)
-test_mask = train_graph(all_mask, graphtrain, graphtest, k_fold, model, optimizer, device, weight_path, loss_function, best, epoch)
+test_mask = train_graph(all_mask, graphtrain, graphtest, k_fold, model, optimizer, repeat_list, weight_path, loss_function, best, epoch)
 test_mask_df =  pd.DataFrame(test_mask, columns=['Mask'])
 test_mask_df.to_csv(r'Data/testMask.csv')
 
