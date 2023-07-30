@@ -77,40 +77,55 @@ graphtest.to(device)
 repeat_list = repeat_list.to(device)
 
 
-model = GraphNet()
-model.to(device)
 
-learning_rate = 0.001
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
 
 weight_path = r'Weights/Graph'
 best = 10000000000000
+loss_best = 10
 epoch = 150
 k_fold = 10
+loss_all = []
+for i in range(30):
 
-loss_function = MAPE
-# loss_function = nn.MSELoss()
-model.train()
-all_mask = torch.tensor(all_mask, dtype=bool)
-test_mask = train_graph(all_mask, graphtrain, graphtest, k_fold, model, optimizer, repeat_list, weight_path, loss_function, best, epoch)
-test_mask_df =  pd.DataFrame(test_mask, columns=['Mask'])
-test_mask_df.to_csv(r'Data/testMask.csv')
 
-test_mask = pd.read_csv(r'Data/testMask.csv')['Mask'].values
-model.load_state_dict(torch.load(r'Weights/Graph/best.pt'))
-model.eval()
-test_result = model(graphtrain)
-# test_result = torch.repeat_interleave(test_result, repeat_list, dim=0)
-test_result1 = test_result[test_mask]
-loss = MAPE(test_result1, graphtrain.y[test_mask])
-print("Final loss is: ", loss)
+    model = GraphNet()
+    model.to(device)
+    loss_function = MAPE
+    learning_rate = 0.001
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    # loss_function = nn.MSELoss()
+    model.train()
+    all_mask = torch.tensor(all_mask, dtype=bool)
+    test_mask = train_graph(all_mask, graphtrain, graphtest, k_fold, model, optimizer, repeat_list, weight_path, loss_function, best, epoch)
+    test_mask_df =  pd.DataFrame(test_mask, columns=['Mask'])
+    test_mask_df.to_csv(r'Data/testMask.csv')
 
-# draw_result(test_result.detach().cpu().numpy(), graphtest.y.detach().cpu().numpy(), 500)
+    test_mask = pd.read_csv(r'Data/testMask.csv')['Mask'].values
+    model.load_state_dict(torch.load(r'Weights/Graph/best.pt'))
+    model.eval()
+    test_result = model(graphtrain)
+    # test_result = torch.repeat_interleave(test_result, repeat_list, dim=0)
+    test_result1 = test_result[test_mask]
+    loss = MAPE(test_result1, graphtrain.y[test_mask])
+    loss = loss.detach().cpu().numpy()
+    loss_all.append(loss)
+    print("Final loss is: ", loss)
 
-for i in range(test_mask.shape[0]):
-    path = r'Data/Result'
-    draw_result(test_result.detach().cpu().numpy()[test_mask], 
-            graphtest.y.detach().cpu().numpy()[test_mask], i, path)
+    # draw_result(test_result.detach().cpu().numpy(), graphtest.y.detach().cpu().numpy(), 500)
+    if loss < loss_best:
+        torch.save(model.state_dict(), r'Weights/Graph/best_all.pt')
+        loss_best = loss
+
+        for idx in range(150):
+            path = r'Data/Result'
+            draw_result(test_result.detach().cpu().numpy()[test_mask], 
+                    graphtest.y.detach().cpu().numpy()[test_mask], idx, path)
+            
+df_loss = pd.DataFrame(loss_all)
+df_loss.to_csv(r'Weights/Graph/loss_all.csv')
+print(np.array(loss_all).mean())
+print(np.array(loss_all).std())
 
 
 
